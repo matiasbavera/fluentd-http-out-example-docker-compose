@@ -1,0 +1,48 @@
+version: "3"
+
+networks:
+  mynet:
+
+services:
+  fluentd:
+    container_name: fluentd
+    user: root
+    build:
+      context: .
+    image: fluentd
+    volumes:
+    - /var/lib/docker/containers:/fluentd/log/containers # Example: Reading docker logs
+    - ./file-mock:/fluentd/log/files/ #Example: Reading logs from a file
+    - ./configurations:/fluentd/etc/
+    - ./logs:/output/ # Example: Fluentd will collect logs and store it here for demo
+    logging:
+      driver: "local"
+    ports:
+      - 9880:9880
+    networks:
+      - mynet
+
+  # This app writes logs to a local file
+  file-myapp:
+    container_name: file-mock-myapp
+    image: alpine
+    volumes:
+    - ./file-mock:/app
+    command: [ /bin/sh , -c , "chmod +x /app/app.sh && ./app/app.sh"]
+    networks:
+      - mynet
+
+  simple-web-app:
+    container_name: webapp
+    image: ekumen/node-web-app
+    user: root
+    build:
+      context: .
+    volumes:
+    - ./simple-node:/usr/src/app
+    expose:
+      - 8080
+    ports:
+      - 8080:8080
+    networks:
+      - mynet
